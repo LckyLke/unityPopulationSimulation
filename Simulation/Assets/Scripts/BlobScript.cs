@@ -13,6 +13,8 @@ public class BlobScript : MonoBehaviour
     public int foodToRepreduce = 2;
     public int foodToSurvive = 1;
 
+    public float scale = 1;
+
     SimControllScript simControll;
     int foodCollected;
     GameObject nearestFood;
@@ -31,6 +33,8 @@ public class BlobScript : MonoBehaviour
         simControll = FindObjectOfType<SimControllScript>();
         simControll.onRoundStart += newRoundEvelutionMethod;
         gameObject.GetComponent<Renderer>().material.color = new Color((speedBlob*4)/255, (100f + speedBlob)/255, (100f + speedBlob/2)/255);
+        gameObject.transform.localScale = transform.localScale * scale;
+        gameObject.transform.position = new Vector3(gameObject.transform.position.x, gameObject.transform.localScale.y, gameObject.transform.position.z);
     }
 
     private void Start()
@@ -51,14 +55,28 @@ public class BlobScript : MonoBehaviour
         float minDistanceToBlob = Mathf.Infinity;
 
         allFood = GameObject.FindGameObjectsWithTag("Food");
-        
-        foreach (GameObject Food in allFood)
+
+        GameObject[] allBlobs = GameObject.FindGameObjectsWithTag("Blob");
+        List<GameObject> eatableBlobs = new List<GameObject>();
+        foreach (GameObject lBlob in allBlobs)
+        {
+            if (transform.localScale.x >= lBlob.transform.localScale.x * 1.2f)
+            {
+                eatableBlobs.Add(lBlob);
+            }
+        }
+
+        List<GameObject> allBlobsAndFood = new List<GameObject>();
+        allBlobsAndFood.AddRange(allFood);
+        allBlobsAndFood.AddRange(eatableBlobs);
+
+        foreach (GameObject EatableGameobject in allBlobsAndFood)
         {
             
-            if (minDistanceToBlob > (transform.position - Food.transform.position).magnitude)
+            if (minDistanceToBlob > (transform.position - EatableGameobject.transform.position).magnitude)
             {
-                nearestFood = Food;
-                minDistanceToBlob = (transform.position - Food.transform.position).magnitude;
+                nearestFood = EatableGameobject;
+                minDistanceToBlob = (transform.position - EatableGameobject.transform.position).magnitude;
             }
         }
     }
@@ -69,12 +87,12 @@ public class BlobScript : MonoBehaviour
         while (foodCollected >= foodToRepreduce)
         {
             foodCollected -= foodToRepreduce;
-            print("new Blob spawned");
+            
             simControll.BlobCount++;
             GameObject newBlob = (GameObject)Instantiate(blobPrefab, new Vector3(UnityEngine.Random.Range(-groundDimensions.x, groundDimensions.x), transform.position.y, UnityEngine.Random.Range(-groundDimensions.y, groundDimensions.y)), Quaternion.identity);
             if (Random.Range(0f, 1f) < mutationChance)
             {
-                int ranDecider = Random.Range(0, 2);
+                int ranDecider = Random.Range(0, 4);
                 int mutationStrength = Random.Range(2, 5);
                 BlobScript newBlobScript = newBlob.GetComponent<BlobScript>();
                 if (ranDecider == 0)
@@ -87,17 +105,30 @@ public class BlobScript : MonoBehaviour
                 if (ranDecider == 1 && foodToSurvive > 1)
                 {
                     newBlobScript.foodToSurvive = Mathf.CeilToInt(newBlobScript.foodToSurvive / mutationStrength);
-                    newBlobScript.speedBlob = Mathf.CeilToInt(newBlobScript.speedBlob / mutationStrength);
+                    newBlobScript.speedBlob = (newBlobScript.speedBlob / mutationStrength);
                     newBlobScript.foodToRepreduce = Mathf.CeilToInt(newBlobScript.foodToRepreduce / mutationStrength);
+                    
                 }
-                int prevStrength = mutationStrength;
+                if (ranDecider == 2)
+                {
+                    newBlobScript.foodToSurvive *= 2;
+                    newBlobScript.scale *= 1.1f;
+                    newBlobScript.foodToRepreduce *= 2;
+                }
+                if (ranDecider == 3 && scale > 1)
+                {
+                    newBlobScript.foodToSurvive = Mathf.CeilToInt(newBlobScript.foodToSurvive / 2);
+                    newBlobScript.scale = (newBlobScript.scale / 1.1f);
+                    newBlobScript.foodToRepreduce = Mathf.CeilToInt(newBlobScript.foodToRepreduce / 2);
+                }
+                
             }
         }
         foodCollected--;
         if (foodCollected < foodToSurvive - 1)
         {
 
-            print("Blob destroyed:(");
+           
             simControll.BlobCount--;
             Destroy(gameObject);
             return;
@@ -113,10 +144,17 @@ public class BlobScript : MonoBehaviour
             transform.position = Vector3.MoveTowards(transform.position, new Vector3(destination.transform.position.x, transform.position.y, destination.transform.position.z), speed * Time.deltaTime);
             yield return null;
         }
-        if (destination != null && destination.GetComponent<FoodScript>().currentEater == gameObject)
+
+        if (destination != null && (destination.tag == "Food" && destination.GetComponent<FoodScript>().currentEater == gameObject || destination.tag == "Blob"))
         {
             foodCollected++;
-        }
+            if (destination.tag == "Blob")
+            {
+                print(destination.tag);
+            }
+        } 
+        
+
         
         Destroy(destination);
         yield return null;
