@@ -30,7 +30,7 @@ public class BlobScript : MonoBehaviour
         groundDimensions = new Vector2(Ground.transform.GetChild(0).transform.position.x, Ground.transform.GetChild(1).transform.position.z);
         simControll = FindObjectOfType<SimControllScript>();
         simControll.onRoundStart += newRoundEvelutionMethod;
-        gameObject.GetComponent<Renderer>().material.color = new Color((speedBlob*5)/255, (100f + 2 * speedBlob)/255, (100f + speedBlob)/255);
+        gameObject.GetComponent<Renderer>().material.color = new Color((speedBlob*4)/255, (100f + speedBlob)/255, (100f + speedBlob/2)/255);
     }
 
     private void Start()
@@ -75,20 +75,22 @@ public class BlobScript : MonoBehaviour
             if (Random.Range(0f, 1f) < mutationChance)
             {
                 int ranDecider = Random.Range(0, 2);
+                int mutationStrength = Random.Range(2, 5);
                 BlobScript newBlobScript = newBlob.GetComponent<BlobScript>();
                 if (ranDecider == 0)
                 {
-                    newBlobScript.foodToSurvive *= 2;
-                    newBlobScript.speedBlob *= 2;
-                    newBlobScript.foodToRepreduce *= 2;
+                    newBlobScript.foodToSurvive *= mutationStrength;
+                    newBlobScript.speedBlob *= mutationStrength;
+                    newBlobScript.foodToRepreduce *= mutationStrength;
 
                 }
                 if (ranDecider == 1 && foodToSurvive > 1)
                 {
-                    newBlobScript.foodToSurvive = newBlobScript.foodToSurvive / 2;
-                    newBlobScript.speedBlob = newBlobScript.speedBlob / 2;
-                    newBlobScript.foodToRepreduce = newBlobScript.foodToRepreduce / 2;
+                    newBlobScript.foodToSurvive = Mathf.CeilToInt(newBlobScript.foodToSurvive / mutationStrength);
+                    newBlobScript.speedBlob = Mathf.CeilToInt(newBlobScript.speedBlob / mutationStrength);
+                    newBlobScript.foodToRepreduce = Mathf.CeilToInt(newBlobScript.foodToRepreduce / mutationStrength);
                 }
+                int prevStrength = mutationStrength;
             }
         }
         foodCollected--;
